@@ -1,0 +1,993 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Canelè · Configuratore</title>
+<meta name="description" content="Configura Canelè, la lampada da tavolo stampata in 3D di Andrea Product Design: scegli l’interno e il filo, accendila e guardala da ogni lato.">
+<meta name="theme-color" content="#D9D1C5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#101814" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="it_IT">
+<meta property="og:site_name" content="Andrea Product Design">
+<meta property="og:title" content="Canelè · Configura la tua lampada">
+<meta property="og:description" content="Configura Canelè, la lampada da tavolo stampata in 3D di Andrea Product Design: scegli l’interno e il filo, accendila e guardala da ogni lato.">
+<meta property="og:image" content="og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="La lampada Canelè accesa, con interno in legno e filo in juta">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Manrope:wght@400;500;600&display=swap">
+<style>
+/* Layout: scena 3D a tutto schermo, card controlli flottante in basso a destra (in basso a tutta larghezza su mobile).
+   Token allineati al file Figma "[NEW UI] Canelè – Configurator": Colori · Giorno / Sera, Dimensioni · Base / Desktop / Mobile. */
+:root {
+  /* Colori · Giorno */
+  --bg: #D9D1C5;
+  --panel: rgba(250, 247, 242, 0.8);
+  --line: rgba(52, 44, 34, 0.14);
+  --fg: #2A251F;
+  --fg-inverse: #ECE4D6;
+  --muted: #4F463A;
+  --accent: #766D62;
+  --accent-soft: rgba(118, 109, 98, 0.10);
+  --chip-ring: rgba(42, 37, 31, 0.14);
+  --switch-off: rgba(42, 37, 31, 0.08);
+  --glow: rgba(118, 109, 98, 0.55);
+  /* Tipografia: Cormorant Garamond (elegante) + Manrope (leggibile, sempre al 7%) */
+  --font-display: "Cormorant Garamond", "Cormorant", Garamond, "Times New Roman", serif;
+  --font-body: "Manrope", "Helvetica Neue", Arial, sans-serif;
+  --track: 0.07em;
+  /* Dimensioni · Base */
+  --chip-size: 30px; --chip-padding: 3px; --chips-gap: 8px;
+  --tab-padding-x: 12px; --tab-padding-y: 10px; --tab-gap: 2px; --tabs-gap: 6px;
+  --group-gap: 8px; --groups-gap: 14px; --content-gap: 16px; --divider-padding-top: 14px;
+  --switch-width: 58px; --switch-height: 32px; --switch-knob: 24px; --switch-padding: 3px;
+  --mode-padding: 3px; --mode-gap: 2px; --mode-icon: 15px; --mode-button-gap: 6px;
+  --cta-height: 42px; --cta-padding: 12px; --cta-gap: 8px; --cta-inner-gap: 4px;
+  /* Dimensioni · Desktop */
+  --page-gutter: 24px; --header-padding-y: 20px;
+  --panel-padding: 24px; --panel-gap: 24px; --panel-width: 330px; --panel-offset-bottom: 24px;
+  --mode-button-padding-x: 12px; --mode-button-padding-y: 6px;
+  --radius-panel: 40px; --radius-tab: 16px;
+  --logo-size: 32px; --brand-gap: 16px;
+  /* Stili di testo · Desktop */
+  --brand-size: 32px; --selector-size: 15px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #101814; --panel: rgba(16, 22, 19, 0.8); --line: rgba(236, 228, 214, 0.12);
+    --fg: #ECE4D6; --fg-inverse: #2A251F; --muted: #B0A491; --accent: #9A9286; --accent-soft: rgba(154, 146, 134, 0.08);
+    --chip-ring: rgba(255, 255, 255, 0.16); --switch-off: rgba(236, 228, 214, 0.08); --glow: rgba(154, 146, 134, 0.8);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #101814; --panel: rgba(16, 22, 19, 0.8); --line: rgba(236, 228, 214, 0.12);
+  --fg: #ECE4D6; --fg-inverse: #2A251F; --muted: #B0A491; --accent: #9A9286; --accent-soft: rgba(154, 146, 134, 0.08);
+  --chip-ring: rgba(255, 255, 255, 0.16); --switch-off: rgba(236, 228, 214, 0.08); --glow: rgba(154, 146, 134, 0.8);
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font-body); overflow: hidden; }
+.app { position: relative; height: 100%; }
+#scene { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
+#scene:active { cursor: grabbing; }
+
+/* ---------- Header ---------- */
+.top {
+  position: absolute; top: 0; left: 0; right: 0;
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  padding-block: var(--header-padding-y);
+  padding-left: max(var(--page-gutter), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--page-gutter), env(safe-area-inset-right, 0px));
+  pointer-events: none;
+}
+.brand { display: flex; align-items: center; gap: var(--brand-gap); color: var(--fg); min-width: 0; }
+.brand svg { width: auto; height: var(--logo-size); flex: none; fill: currentColor; }
+.brand-text { font: 500 var(--brand-size)/1 var(--font-display); letter-spacing: 0; white-space: nowrap; }
+.brand-div { font: 500 var(--brand-size)/1 var(--font-display); }
+.mode {
+  pointer-events: auto; display: inline-flex; gap: var(--mode-gap); padding: var(--mode-padding); flex: none;
+  border: 1px solid var(--line); border-radius: 999px; background: var(--panel);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+}
+.mode button {
+  appearance: none; border: 0; background: transparent; color: var(--muted); cursor: pointer;
+  display: inline-flex; align-items: center; gap: var(--mode-button-gap);
+  padding: var(--mode-button-padding-y) var(--mode-button-padding-x); border-radius: 999px;
+  font: 400 var(--selector-size)/1.2 var(--font-display); transition: background .25s, color .25s;
+}
+.mode button svg { width: var(--mode-icon); height: var(--mode-icon); flex: none; }
+.mode button[aria-pressed="true"] { background: var(--accent-soft); color: var(--fg); box-shadow: inset 0 0 0 1px var(--accent); }
+.mode button:hover { color: var(--fg); }
+body, .panel, .tab, .mode, .loader { transition-property: background-color, color, border-color; transition-duration: .8s; }
+
+/* ---------- Card controlli ---------- */
+.panel {
+  position: absolute;
+  right: max(var(--page-gutter), env(safe-area-inset-right, 0px));
+  bottom: calc(var(--panel-offset-bottom) + env(safe-area-inset-bottom, 0px));
+  width: var(--panel-width);
+  max-width: calc(100% - 2 * var(--page-gutter));
+  max-height: calc(100% - 110px); overflow-y: auto; scrollbar-width: none;
+  background: var(--panel);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  padding: var(--panel-padding);
+  display: flex; flex-direction: column; gap: var(--panel-gap);
+}
+.panel::-webkit-scrollbar { display: none; }
+.content { display: flex; flex-direction: column; gap: var(--content-gap); }
+.tabs { display: grid; grid-template-columns: 1fr 1fr; gap: var(--tabs-gap); }
+.tab {
+  appearance: none; border: 1px solid var(--line); background: transparent; color: var(--fg);
+  border-radius: var(--radius-tab); padding: var(--tab-padding-y) var(--tab-padding-x); text-align: left; cursor: pointer;
+  font: 500 18px/1.2 var(--font-display); letter-spacing: -0.01em;
+  display: flex; flex-direction: column; gap: var(--tab-gap);
+  transition: color .2s, border-color .2s, background .2s;
+}
+.tab small { font: 400 12px/1.3 var(--font-body); letter-spacing: var(--track); color: var(--muted); }
+.tab[aria-selected="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.tab:hover { border-color: var(--accent); }
+
+.options { display: flex; flex-direction: column; gap: var(--groups-gap); }
+.opt-group { display: flex; flex-direction: column; gap: var(--group-gap); }
+.opt-group h3 { margin: 0; font: 600 12px/1.3 var(--font-body); letter-spacing: var(--track); text-transform: uppercase; color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: var(--chips-gap); }
+.cchip {
+  appearance: none; cursor: pointer; padding: var(--chip-padding); border-radius: 50%;
+  border: 1px solid transparent; background: transparent; transition: border-color .2s;
+}
+.cchip span { display: block; width: var(--chip-size); height: var(--chip-size); border-radius: 50%; border: 1px solid var(--chip-ring); box-shadow: inset 0 -5px 8px rgba(0,0,0,0.18); }
+.cchip:hover { border-color: var(--line); }
+.cchip[aria-pressed="true"] { border-color: var(--accent); }
+
+.light-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; border-top: 1px solid var(--line); padding-top: var(--divider-padding-top); }
+.light-row .lbl { display: flex; flex-direction: column; gap: 2px; }
+.light-row .lbl strong { font: 500 18px/1.2 var(--font-display); color: var(--fg); }
+.light-row .lbl small { font: 400 11px/1.3 var(--font-body); letter-spacing: var(--track); text-transform: uppercase; color: var(--muted); }
+.switch {
+  appearance: none; cursor: pointer; position: relative; flex: none;
+  width: var(--switch-width); height: var(--switch-height); border-radius: 999px; border: 1px solid var(--line);
+  background: var(--switch-off); transition: background .25s, border-color .25s;
+}
+.switch::after {
+  content: ""; position: absolute; top: 50%; left: calc(var(--switch-padding) - 1px); transform: translateY(-50%);
+  width: var(--switch-knob); height: var(--switch-knob); border-radius: 50%;
+  background: var(--muted); transition: transform .25s ease, background .25s, box-shadow .25s;
+}
+.switch[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
+.switch[aria-pressed="true"]::after { transform: translate(calc(var(--switch-width) - var(--switch-knob) - 2 * var(--switch-padding)), -50%); background: var(--accent); box-shadow: 0 0 14px var(--glow); }
+
+/* Riepilogo: chiavi in Cormorant SemiBold maiuscolo, valori in Manrope SemiBold */
+.summary { line-height: 1.6; color: var(--muted); }
+.summary .k { font: 600 13px/1.6 var(--font-display); text-transform: uppercase; }
+.summary b { font: 600 12px/1.6 var(--font-body); letter-spacing: var(--track); color: var(--fg); }
+
+/* CTA */
+.ctas { display: flex; gap: var(--cta-gap); }
+.cta {
+  appearance: none; display: inline-flex; align-items: center; justify-content: center; gap: var(--cta-inner-gap);
+  height: var(--cta-height); padding: 0 var(--cta-padding); border-radius: 999px; white-space: nowrap;
+  text-decoration: none; cursor: pointer; transition: background .25s, color .25s, border-color .25s, opacity .2s;
+  font: 400 var(--selector-size)/1 var(--font-display);
+}
+.cta-secondary { flex: 1 1 auto; min-width: 0; border: 1px solid var(--line); color: var(--fg); background: transparent; }
+.cta-secondary:hover { border-color: var(--accent); }
+.cta-primary { flex: 0 0 auto; border: 1px solid var(--fg); background: var(--fg); color: var(--fg-inverse); }
+.cta-primary:hover { opacity: .9; }
+.cta-price { font: 600 12px/1 var(--font-body); letter-spacing: var(--track); }
+
+/* Loader: la "a" del logo si scrive, poi compaiono modello e interfaccia */
+.loader {
+  position: absolute; inset: 0; z-index: 20; background: var(--bg);
+  display: grid; place-items: center; align-content: center; gap: 18px;
+  transition: opacity .7s ease, visibility 0s linear .7s;
+}
+.loader svg { width: min(120px, 28vw); height: auto; overflow: visible; }
+.loader .ink { fill: var(--fg); }
+.loader .trace { fill: none; stroke: #fff; stroke-width: 48; stroke-linecap: round; stroke-linejoin: round; }
+.loader .status { font: 500 22px/1 var(--font-display); color: var(--muted); }
+.loader.done { opacity: 0; visibility: hidden; }
+.top, .panel, .hint { opacity: 0; transform: translateY(8px); transition: opacity .8s ease .5s, transform .8s ease .5s; }
+#scene { opacity: 0; transition: opacity 1.4s ease; }
+.app.ready #scene { opacity: 1; }
+.app.ready .top, .app.ready .panel, .app.ready .hint { opacity: 1; transform: none; }
+
+.hint {
+  position: absolute; bottom: calc(var(--panel-offset-bottom) + env(safe-area-inset-bottom, 0px)); left: max(var(--page-gutter), env(safe-area-inset-left, 0px));
+  font: 500 13px/1.3 var(--font-body); letter-spacing: var(--track); color: var(--muted);
+  pointer-events: none;
+}
+.fallback { position: absolute; inset: 0; z-index: 30; background: var(--bg); display: grid; place-items: center; align-content: center; gap: 14px; padding: 24px; text-align: center; color: var(--muted); font: 400 15px/1.5 var(--font-body); letter-spacing: var(--track); }
+.reload { appearance: none; cursor: pointer; border: 1px solid var(--fg); background: var(--fg); color: var(--fg-inverse); border-radius: 999px; height: var(--cta-height); padding: 0 18px; font: 400 15px var(--font-display); }
+
+button:focus-visible, .cta:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- Mobile ---------- */
+@media (max-width: 640px) {
+  :root {
+    --page-gutter: 16px; --header-padding-y: 14px;
+    --panel-padding: 24px; --panel-gap: 16px; --panel-offset-bottom: 16px;
+    --mode-button-padding-x: 10px; --mode-button-padding-y: 6px;
+    --radius-panel: 24px; --radius-tab: 8px;
+    --logo-size: 24px; --brand-gap: 8px;
+    --brand-size: 22px; --selector-size: 14px;
+  }
+  .panel {
+    left: max(var(--page-gutter), env(safe-area-inset-left, 0px));
+    right: max(var(--page-gutter), env(safe-area-inset-right, 0px));
+    width: auto; max-width: none; max-height: calc(100% - 90px);
+  }
+  .ctas { flex-direction: column; }
+  .cta-secondary, .cta-primary { flex: none; width: 100%; }
+  .summary, .hint { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #scene, .top, .panel, .hint, .loader, .tab, .switch, .switch::after, .cta { transition: none; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <canvas id="scene" aria-label="Anteprima 3D della lampada: trascina per ruotare"></canvas>
+
+  <header class="top">
+    <div class="brand" aria-label="Canelè"><svg viewBox="0 0 321.36 280.94" aria-hidden="true"><path d="m222.93,4.18c1.63-1.63.32-4.41-1.97-4.16-25.68,2.76-119.86,19.01-183.66,111.17-74.48,107.58-20.56,172.74,16.55,169.65,43.8-3.65,110.15-84.59,125.17-103.61.87-1.1,2.62-.37,2.46,1.02-2.51,21.61-9.56,105.67,33.74,98.45,43.75-7.29,93.92-72.4,105.24-87.78,1.37-1.86,1.16-4.43-.48-6.07l-4.12-4.12c-2.9-2.9-7.64-2.69-10.25.47-11.37,13.76-40.04,46.13-53.15,39.57-16.55-8.28-16.55-103.44,4.14-161.37,6.1-17.09,11.7-30.38,14.56-36.91,1.14-2.6.23-5.63-2.13-7.21l-4.65-3.1c-2.17-1.44-5.02-1.29-7.02.38-10.69,8.97-43.51,37.18-50.41,50.98-7.56,15.12-53.58,160.46-111.72,157.24-46.21-2.56-41.38-95.17-8.28-128.27,31.27-31.27,77.14-42.12,91.03-44.79,2.76-.53,5.28-1.86,7.26-3.85L222.93,4.18Z"/></svg><span class="brand-div" aria-hidden="true">/</span><span class="brand-text">Canelè</span></div>
+    <div class="mode" role="group" aria-label="Ambiente">
+      <button type="button" id="mode-day" data-mode="light" aria-pressed="false">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="3"/><path d="M8 1.5v1.6M8 12.9v1.6M1.5 8h1.6M12.9 8h1.6M3.4 3.4l1.1 1.1M11.5 11.5l1.1 1.1M3.4 12.6l1.1-1.1M11.5 4.5l1.1-1.1"/></svg>
+        Giorno
+      </button>
+      <button type="button" id="mode-evening" data-mode="dark" aria-pressed="false">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" aria-hidden="true"><path d="M13.2 10.2A5.6 5.6 0 0 1 5.8 2.8a5.6 5.6 0 1 0 7.4 7.4Z"/></svg>
+        Sera
+      </button>
+    </div>
+  </header>
+
+  <aside class="panel" aria-label="Configura la lampada">
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" id="tab-inner" aria-selected="true" data-part="inner"><small>01</small>Interno</button>
+      <button class="tab" role="tab" id="tab-cable" aria-selected="false" data-part="cable"><small>02</small>Filo</button>
+    </div>
+    <div class="content">
+      <div class="options" id="options" role="group" aria-label="Struttura interna"></div>
+      <div class="light-row">
+        <div class="lbl"><strong>Luce</strong><small id="light-state">Spenta</small></div>
+        <button class="switch" id="light-toggle" aria-pressed="false" aria-label="Accendi la lampada"></button>
+      </div>
+      <div class="summary" id="summary"></div>
+      <div class="ctas">
+        <!-- Link da inserire: portfolio e profilo Instagram -->
+        <a class="cta cta-secondary" id="cta-idea" href="https://www.andreaproductdesign.com/projects-2/canele" target="_blank" rel="noopener">Scopri l’idea</a>
+        <a class="cta cta-primary" id="cta-order" href="https://ig.me/m/andrea.productdesign" target="_blank" rel="noopener"><span class="cta-price">80€</span><span>Ordina la tua su IG</span></a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="loader" id="loader" role="status" aria-label="Caricamento del configuratore">
+    <svg viewBox="0 0 321.36 280.94" aria-hidden="true">
+      <defs>
+        <mask id="write-mask" maskUnits="userSpaceOnUse" x="-40" y="-40" width="400" height="360">
+          <path class="trace" id="trace" d="M215,10 C150,30 60,80 35,160 C20,215 35,265 60,270 C110,240 180,160 205,100 C220,60 240,30 258,14 C240,60 222,130 214,190 C208,240 225,268 250,258 C275,245 300,215 318,185"/>
+        </mask>
+      </defs>
+      <path class="ink" mask="url(#write-mask)" d="m222.93,4.18c1.63-1.63.32-4.41-1.97-4.16-25.68,2.76-119.86,19.01-183.66,111.17-74.48,107.58-20.56,172.74,16.55,169.65,43.8-3.65,110.15-84.59,125.17-103.61.87-1.1,2.62-.37,2.46,1.02-2.51,21.61-9.56,105.67,33.74,98.45,43.75-7.29,93.92-72.4,105.24-87.78,1.37-1.86,1.16-4.43-.48-6.07l-4.12-4.12c-2.9-2.9-7.64-2.69-10.25.47-11.37,13.76-40.04,46.13-53.15,39.57-16.55-8.28-16.55-103.44,4.14-161.37,6.1-17.09,11.7-30.38,14.56-36.91,1.14-2.6.23-5.63-2.13-7.21l-4.65-3.1c-2.17-1.44-5.02-1.29-7.02.38-10.69,8.97-43.51,37.18-50.41,50.98-7.56,15.12-53.58,160.46-111.72,157.24-46.21-2.56-41.38-95.17-8.28-128.27,31.27-31.27,77.14-42.12,91.03-44.79,2.76-.53,5.28-1.86,7.26-3.85L222.93,4.18Z"/>
+    </svg>
+    <div class="status" id="loader-status">Canelè</div>
+  </div>
+  <div class="hint">Trascina per ruotare · scroll per zoom</div>
+</div>
+
+<script type="application/json" id="model-manifest">{"paralume":{"min":[-60.75,30.0,-60.75],"max":[60.75,231.3114,60.75],"count":141958,"pos":[0,851748],"nrm":[851748,425874],"idx":[1277624,3382032],"idx32":true},"lampadina":{"min":[-23.0,81.0,-23.0],"max":[23.0,127.0,23.0],"count":8066,"pos":[4659656,48396],"nrm":[4708052,24198],"idx":[4732252,96768],"idx32":false},"corpo":{"min":[-81.8964,12.6442,-120.5066],"max":[13.5,186.0,13.5],"count":6586,"pos":[4829020,39516],"nrm":[4868536,19758],"idx":[4888296,75720],"idx32":false},"interno":{"min":[-59.0,0.0,-59.0],"max":[59.0,229.562,59.0],"count":114577,"pos":[4964016,687462],"nrm":[5651480,343731],"idx":[5995212,2522088],"idx32":true},"filo":{"min":[-80.0658,-68.3836,-219.3466],"max":[3.0979,243.2943,74.4174],"count":23358,"pos":[8517300,140148],"nrm":[8657448,70074],"uv":[8727524,186864],"centerlines":[[-1.92,-66.98,-216.32,-2.62,-65.08,-216.39,-2.2,-63.48,-217.11,-1.49,-63.53,-215.36,-2.4,-64.3,-213.81,-4.17,-64.98,-214.22,-5.2,-64.44,-215.69,-5.46,-62.48,-215.88,-5.82,-60.54,-215.37,-6.33,-58.67,-214.75,-6.91,-56.82,-214.11,-7.6,-55.0,-213.5,-8.34,-53.19,-212.91,-9.12,-51.39,-212.34,-9.93,-49.59,-211.8,-10.75,-47.8,-211.26,-11.58,-46.02,-210.71,-12.41,-44.24,-210.16,-13.25,-42.46,-209.6,-14.09,-40.69,-209.02,-14.93,-38.92,-208.43,-15.77,-37.17,-207.82,-16.61,-35.41,-207.21,-17.45,-33.67,-206.56,-18.29,-31.93,-205.9,-19.14,-30.2,-205.21,-19.98,-28.48,-204.51,-20.83,-26.77,-203.78,-21.68,-25.07,-203.03,-22.52,-23.38,-202.26,-23.37,-21.71,-201.44,-24.22,-20.05,-200.61,-25.07,-18.41,-199.74,-25.92,-16.79,-198.83,-26.77,-15.18,-197.9,-27.62,-13.61,-196.91,-28.47,-12.06,-195.9,-29.32,-10.54,-194.82,-30.17,-9.05,-193.71,-31.01,-7.6,-192.55,-31.85,-6.19,-191.33,-32.68,-4.81,-190.08,-33.51,-3.5,-188.75,-34.34,-2.23,-187.38,-35.15,-1.01,-185.96,-35.95,0.14,-184.48,-36.75,1.26,-182.97,-37.54,2.29,-181.39,-38.32,3.29,-179.79,-39.08,4.24,-178.15,-39.84,5.13,-176.48,-40.6,6.0,-174.79,-41.34,6.81,-173.07,-42.07,7.6,-171.34,-42.8,8.36,-169.59,-43.52,9.1,-167.83,-44.24,9.81,-166.05,-44.94,10.5,-164.26,-45.64,11.18,-162.47,-46.32,11.83,-160.66,-47.0,12.47,-158.84,-47.66,13.1,-157.01,-48.31,13.71,-155.18,-48.95,14.31,-153.33,-49.58,14.89,-151.48,-50.2,15.47,-149.62,-50.79,16.03,-147.75,-51.39,16.59,-145.88,-51.96,17.14,-144.0,-52.53,17.69,-142.11,-53.08,18.23,-140.22,-53.62,18.76,-138.32,-54.16,19.29,-136.43,-54.68,19.81,-134.52,-55.19,20.33,-132.61,-55.69,20.85,-130.7,-56.18,21.36,-128.79,-56.66,21.88,-126.87,-57.13,22.39,-124.95,-57.6,22.9,-123.03,-58.06,23.41,-121.11,-58.51,23.91,-119.18,-58.96,24.42,-117.25,-59.39,24.93,-115.32,-59.82,25.43,-113.39,-60.24,25.94,-111.46,-60.66,26.44,-109.52],[-68.86,40.65,-54.67,-69.14,41.26,-52.77,-69.41,41.88,-50.87,-69.68,42.5,-48.96,-69.95,43.13,-47.07,-70.22,43.76,-45.17,-70.48,44.4,-43.27,-70.74,45.05,-41.38,-70.99,45.71,-39.49,-71.25,46.36,-37.6,-71.5,47.04,-35.71,-71.74,47.71,-33.82,-71.98,48.4,-31.94,-72.22,49.1,-30.06,-72.46,49.8,-28.19,-72.68,50.52,-26.32,-72.91,51.24,-24.44,-73.13,51.99,-22.58,-73.35,52.73,-20.72,-73.56,53.49,-18.86,-73.77,54.26,-17.01,-73.97,55.04,-15.16,-74.17,55.84,-13.31,-74.36,56.64,-11.47,-74.55,57.47,-9.64,-74.73,58.3,-7.81,-74.9,59.16,-5.99,-75.07,60.02,-4.17,-75.24,60.9,-2.36,-75.4,61.8,-0.57,-75.55,62.7,1.23,-75.69,63.65,3.01,-75.83,64.59,4.79,-75.96,65.56,6.55,-76.09,66.55,8.31,-76.2,67.55,10.06,-76.31,68.58,11.79,-76.41,69.62,13.52,-76.5,70.71,15.22,-76.58,71.79,16.91,-76.65,72.92,18.59,-76.72,74.06,20.25,-76.77,75.23,21.9,-76.81,76.43,23.52,-76.84,77.63,25.13,-76.86,78.9,26.71,-76.87,80.16,28.28,-76.86,81.47,29.82,-76.84,82.8,31.34,-76.82,84.15,32.83,-76.77,85.54,34.3,-76.73,86.93,35.76,-76.65,88.38,37.16,-76.58,89.82,38.57,-76.48,91.32,39.92,-76.38,92.82,41.27,-76.26,94.35,42.57,-76.13,95.91,43.85,-75.99,97.48,45.11,-75.83,99.09,46.32,-75.66,100.7,47.53,-75.47,102.35,48.67,-75.28,104.01,49.81,-75.06,105.69,50.9,-74.84,107.39,51.96,-74.61,109.1,53.01,-74.35,110.84,54.0,-74.1,112.58,54.99,-73.81,114.35,55.91,-73.53,116.13,56.83,-73.22,117.92,57.69,-72.91,119.73,58.54,-72.58,121.54,59.36,-72.24,123.38,60.13,-71.89,125.21,60.9,-71.52,127.06,61.6,-71.15,128.92,62.31,-70.75,130.79,62.96,-70.35,132.66,63.59,-69.94,134.54,64.2,-69.51,136.43,64.76,-69.08,138.32,65.32,-68.63,140.22,65.83,-68.17,142.12,66.33,-67.69,144.03,66.79,-67.21,145.94,67.23,-66.71,147.85,67.65,-66.2,149.76,68.03,-65.68,151.68,68.41,-65.15,153.59,68.74,-64.61,155.51,69.07,-64.04,157.43,69.35,-63.48,159.34,69.63,-62.89,161.26,69.88,-62.3,163.18,70.1,-61.7,165.09,70.32,-61.07,167.0,70.49,-60.45,168.91,70.67,-59.8,170.82,70.79,-59.14,172.72,70.91,-58.47,174.62,71.0,-57.79,176.52,71.07,-57.1,178.42,71.12,-56.39,180.31,71.13,-55.68,182.2,71.14,-54.94,184.07,71.1,-54.2,185.95,71.06,-53.44,187.82,70.97,-52.68,189.68,70.87,-51.9,191.54,70.74,-51.1,193.39,70.57,-50.31,195.23,70.4,-49.48,197.06,70.18,-48.66,198.89,69.95,-47.82,200.71,69.67,-46.97,202.51,69.38,-46.11,204.31,69.05,-45.24,206.09,68.69,-44.37,207.87,68.31,-43.47,209.63,67.88,-42.58,211.38,67.44,-41.66,213.11,66.94,-40.74,214.83,66.43,-39.81,216.53,65.86,-38.87,218.21,65.27,-37.92,219.88,64.64,-36.96,221.51,63.95,-35.99,223.14,63.25,-35.0,224.71,62.45,-34.01,226.27,61.64,-33.0,227.76,60.73,-31.98,229.23,59.79,-30.95,230.61,58.76,-29.9,231.95,57.67,-28.84,233.2,56.5,-27.77,234.36,55.24,-26.69,235.44,53.93,-25.6,236.36,52.5,-24.52,237.23,51.04,-23.44,237.88,49.46,-22.36,238.5,47.87,-21.31,238.86,46.19,-20.25,239.21,44.51,-19.24,239.29,42.76,-18.23,239.37,41.02,-17.27,239.21,39.25,-16.32,239.03,37.48,-15.4,238.66,35.72,-14.5,238.24,33.97,-13.64,237.69,32.23,-12.8,237.05,30.51,-11.99,236.31,28.82,-11.2,235.46,27.17,-10.44,234.55,25.54,-9.72,233.52,23.96,-9.01,232.45,22.4,-8.36,231.24,20.93,-7.7,230.02,19.46,-7.11,228.65,18.1,-6.52,227.28,16.75,-5.98,225.8,15.49,-5.46,224.29,14.26,-4.97,222.71,13.1,-4.52,221.08,12.0,-4.08,219.42,10.94,-3.68,217.7,9.96,-3.3,215.97,9.0,-2.95,214.18,8.14,-2.61,212.38,7.27,-2.32,210.54,6.52,-2.02,208.69,5.76,-1.75,206.81,5.08,-1.49,204.92,4.42,-1.23,203.02,3.79,-0.97,201.11,3.19,-0.7,199.21,2.59,-0.39,197.3,1.99,-0.07,195.41,1.37,0.29,193.54,0.7,0.63,191.72,-0.1,0.71,190.0,-1.11,-0.89,189.27,-1.14,-1.78,188.99,0.54,-0.81,188.81,2.15,1.08,188.78,2.15,0.75,187.72,0.71,0.0,186.0,-0.0]],"radius":3.1},"_bytes":8914388}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function () {
+  // ---------- Finiture ----------
+  // speck: puntinatura scura delle fibre di legno nel filamento; varia: leggera variazione di tono tra gli strati
+  var OPTIONS = {
+    inner: {
+      label: "Struttura interna",
+      groups: [
+        { title: "Legno stampato", items: [
+          { id: "betulla",  name: "Betulla",  hex: "#BFA574", finish: "Legno · opaco a strati", speck: 1.0, varia: 0.06 },
+          { id: "rovere",   name: "Rovere bianco", hex: "#E2D2B2", finish: "Legno · opaco a strati", speck: 1.0, varia: 0.06 },
+          { id: "noce",     name: "Noce",     hex: "#6B5B4C", finish: "Legno · opaco a strati", speck: 0.8, varia: 0.08 }
+        ] },
+        { title: "Colore", items: [
+          { id: "nero",    name: "Nero",          hex: "#1E1E1F", finish: "Opaco a strati", speck: 0, varia: 0.02 },
+          { id: "blu",     name: "Blu notte",     hex: "#2E3A56", finish: "Opaco a strati", speck: 0, varia: 0.02 },
+          { id: "bianco",  name: "Bianco",        hex: "#F1EFEA", finish: "Opaco a strati", speck: 0, varia: 0.02 },
+          { id: "salvia",  name: "Verde Salvia",  hex: "#6C7B67", finish: "Opaco a strati", speck: 0, varia: 0.02 }
+        ] }
+      ]
+    },
+    cable: {
+      label: "Filo",
+      groups: [
+        { title: "Juta", items: [
+          { id: "juta", name: "Juta naturale", hex: "#B49C78", finish: "Juta intrecciata", type: "juta" }
+        ] },
+        { title: "Tessile", items: [
+          { id: "t-bianco",   name: "Bianco",       hex: "#EEEDEA", finish: "Cotone intrecciato", type: "tessile" },
+          { id: "t-nero",     name: "Nero",         hex: "#1B1B1C", finish: "Cotone intrecciato", type: "tessile" },
+          { id: "t-salvia",   name: "Verde Salvia", hex: "#5E6D5A", finish: "Cotone intrecciato", type: "tessile" },
+          { id: "t-arancio",  name: "Arancio",      hex: "#D8642C", finish: "Cotone intrecciato", type: "tessile" },
+          { id: "t-rosso",    name: "Rosso Corsa",  hex: "#E4002B", finish: "Cotone intrecciato", type: "tessile" },
+          { id: "t-bordeaux", name: "Bordeaux",     hex: "#5C1E2A", finish: "Cotone intrecciato", type: "tessile" },
+          { id: "t-blu",      name: "Blu",          hex: "#1F3B8F", finish: "Cotone intrecciato", type: "tessile" },
+          { id: "t-glicine",  name: "Glicine",      hex: "#A2A5D5", finish: "Cotone intrecciato", type: "tessile" }
+        ] }
+      ]
+    }
+  };
+  var state = { part: "inner", inner: "betulla", cable: "juta", on: false };
+
+  var canvas = document.getElementById("scene");
+  var loaderEl = document.getElementById("loader");
+  var appEl = document.querySelector(".app");
+  var trace = document.getElementById("trace");
+
+  // la "a" si scrive: una maschera con un tratto spesso segue l'ordine del gesto
+  // INTRO_ON: loader animato e ingresso con rotazione (passo 2). Spento = comportamento del passo 1.
+  var INTRO_ON = true;
+  if (!INTRO_ON) { var inkEl = document.querySelector(".loader .ink"); if (inkEl) inkEl.removeAttribute("mask"); }
+  var writeDone = new Promise(function (resolve) {
+    if (!INTRO_ON || reduceMotion || !trace || !trace.getTotalLength || !trace.animate) { resolve(); return; }
+    var len = trace.getTotalLength();
+    trace.style.strokeDasharray = len + " " + len;
+    trace.style.strokeDashoffset = len;
+    var anim = trace.animate([{ strokeDashoffset: len }, { strokeDashoffset: 0 }],
+      { duration: 2300, delay: 250, easing: "cubic-bezier(.5,.05,.35,1)", fill: "forwards" });
+    anim.onfinish = function () { trace.style.strokeDashoffset = 0; setTimeout(resolve, 400); };
+  });
+  var resolveModel, modelReady = new Promise(function (resolve) { resolveModel = resolve; });
+  var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function showFallback(msg) {
+    loaderEl.classList.add("done");
+    var d = document.createElement("div");
+    d.className = "fallback"; d.textContent = msg;
+    document.querySelector(".app").appendChild(d);
+  }
+  if (!window.THREE || !THREE.OrbitControls) { showFallback("La libreria 3D non si è caricata. Ricarica la pagina."); return; }
+  var renderer;
+  try { renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true }); }
+  catch (e) { showFallback("Il browser non supporta WebGL, quindi l'anteprima 3D non è disponibile."); return; }
+
+  function lin(hex) { return new THREE.Color(hex).convertSRGBToLinear(); }
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      var t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function allItems(part) { return OPTIONS[part].groups.reduce(function (a, g) { return a.concat(g.items); }, []); }
+  function findItem(part, id) { return allItems(part).filter(function (i) { return i.id === id; })[0]; }
+
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5)); // meno memoria video sugli schermi retina
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.0;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
+  renderer.shadowMap.autoUpdate = false; // la lampada è ferma: le ombre si calcolano una volta sola
+  renderer.shadowMap.needsUpdate = true;
+
+  var S = 0.01; // modello Rhino in millimetri: 1 unità scena = 100 mm
+
+  var scene = new THREE.Scene();
+  // lo sfondo è scritto così com'è sullo schermo (niente conversione): stesso tono del piano in lontananza
+  var BG_OFF = new THREE.Color("#1b1f20"), BG_ON = new THREE.Color("#0a0c0c");
+  // Giorno: intonaco caldo; la lampada accesa abbassa appena la stanza
+  var BG_DAY_OFF = new THREE.Color("#bdb3a5"), BG_DAY_ON = new THREE.Color("#b2a89a");
+  var FLOOR_NIGHT = lin("#262a2b"), FLOOR_DAY = lin("#a89c8c");
+  var HEMI_SKY_N = new THREE.Color(0xb8c2bc), HEMI_GND_N = new THREE.Color(0x141210);
+  var HEMI_SKY_D = new THREE.Color(0xfff0dc), HEMI_GND_D = new THREE.Color(0x6b5d50);
+  var KEY_N = new THREE.Color(0xe8ecff), KEY_D = new THREE.Color(0xffdcb6);
+  var tmpBg = new THREE.Color();
+  scene.background = BG_OFF.clone();
+
+  var camera = new THREE.PerspectiveCamera(36, 1, 0.1, 100);
+  var controls = new THREE.OrbitControls(camera, canvas);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.enablePan = false;
+  controls.minDistance = 1.2;
+  controls.maxDistance = 10;
+  controls.maxPolarAngle = Math.PI * 0.47;
+
+  // ---------- Ambiente per i riflessi ----------
+  var pmrem = new THREE.PMREMGenerator(renderer);
+  var envScene = new THREE.Scene();
+  envScene.add(new THREE.Mesh(new THREE.BoxGeometry(20, 20, 20), new THREE.MeshBasicMaterial({ color: 0x181b19, side: THREE.BackSide })));
+  function softbox(w, h, pos, c) {
+    var m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: c, side: THREE.DoubleSide }));
+    m.position.copy(pos); m.lookAt(0, 0, 0); envScene.add(m);
+  }
+  softbox(8, 3, new THREE.Vector3(0, 8, 2), 0xffffff);
+  softbox(4, 6, new THREE.Vector3(-8, 2, 3), 0xdde6ff);
+  softbox(3, 5, new THREE.Vector3(8, 1, -3), 0xffe2c0);
+  scene.environment = pmrem.fromScene(envScene, 0.04).texture;
+
+  // ---------- Piano infinito scuro ----------
+  // Sfuma nel colore di sfondo. Il colore di sfondo non passa da tone mapping e codifica,
+  // quindi la miscela avviene dopo, sul colore finale del pixel.
+  function voidFade(mat, expr) {
+    var prev = mat.onBeforeCompile;
+    mat.customProgramCacheKey = function () { return "void:" + expr; };
+    mat.onBeforeCompile = function (sh, r) {
+      if (prev) prev(sh, r);
+      sh.uniforms.uBg = { value: scene.background };
+      if (sh.vertexShader.indexOf("varying vec3 vWPos;") < 0) {
+        sh.vertexShader = sh.vertexShader
+          .replace("#include <common>", "#include <common>\nvarying vec3 vWPos;")
+          .replace("#include <project_vertex>", "#include <project_vertex>\nvWPos = (modelMatrix * vec4(transformed, 1.0)).xyz;");
+        sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nvarying vec3 vWPos;");
+      }
+      sh.fragmentShader = sh.fragmentShader
+        .replace("#include <common>", "#include <common>\nuniform vec3 uBg;")
+        .replace("#include <fog_fragment>", "#include <fog_fragment>\ngl_FragColor.rgb = mix(gl_FragColor.rgb, uBg, " + expr + ");");
+    };
+  }
+
+  // Piano d'appoggio: infinito ai lati e verso chi guarda, con un bordo netto dietro la lampada.
+  // Oltre il bordo c'è solo il vuoto: niente pavimento sotto, nessuno spessore.
+  var EDGE_Z = -1.79;
+  var floorMat = new THREE.MeshStandardMaterial({ color: lin("#262a2b"), roughness: 0.9, metalness: 0 });
+  voidFade(floorMat, "max(smoothstep(2.6, 8.0, length(vWPos.xz)), 0.45 * (1.0 - smoothstep(-1.79, -0.6, vWPos.z)))");
+  var floor = new THREE.Mesh(new THREE.PlaneGeometry(400, 200), floorMat);
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.z = EDGE_Z + 100;
+  floor.receiveShadow = true;
+  scene.add(floor);
+
+  // ---------- Materiale "stampa 3D": strati, grana, puntinatura, traslucenza opzionale ----------
+  function makePrinted(opts) {
+    var mat = new THREE.MeshStandardMaterial({ color: lin(opts.color), roughness: opts.rough, metalness: 0, side: opts.side || THREE.FrontSide });
+    mat.extensions = { derivatives: true };
+    var u = {
+      uTransmit: { value: opts.transmit || 0 },
+      uScale: { value: 1 / S },
+      uLayer: { value: opts.layer },
+      uGrain: { value: opts.grain },
+      uSpeck: { value: opts.speck || 0 },
+      uVaria: { value: opts.varia || 0 },
+      uTopSoft: { value: opts.topSoft || 0 }
+    };
+    mat.userData.u = u;
+    mat.onBeforeCompile = function (sh) {
+      for (var k in u) sh.uniforms[k] = u[k];
+      sh.vertexShader = sh.vertexShader
+        .replace("#include <common>", "#include <common>\nvarying vec3 vWPos;")
+        .replace("#include <project_vertex>", "#include <project_vertex>\nvWPos = (modelMatrix * vec4(transformed, 1.0)).xyz;");
+      var lc = THREE.ShaderChunk.lights_fragment_begin;
+      var at = lc.indexOf("pointLights[ i ]");
+      var gp = lc.indexOf("directLight );", at) + "directLight );".length;
+      var re = lc.indexOf("RE_Direct(", gp);
+      if (at > -1 && gp > 20 && re > -1) {
+        // in alto il paralume diffonde la luce: l'ombra del portalampada sfuma invece di tagliare netto
+        lc = lc.slice(0, gp) + "\n\t\tpreShadow = directLight.color;" + lc.slice(gp, re) +
+          "{ vec3 tc = mix( directLight.color, preShadow, uTopSoft * smoothstep( 1.5, 2.05, vWPos.y ) );\n\t\t" +
+          "reflectedLight.directDiffuse += uTransmit * tc * saturate( -dot( geometry.normal, directLight.direction ) ) * material.diffuseColor; }\n\t\t" +
+          lc.slice(re);
+      }
+      sh.fragmentShader = sh.fragmentShader
+        .replace("#include <common>", [
+          "#include <common>",
+          "varying vec3 vWPos;",
+          "uniform float uTransmit, uScale, uLayer, uGrain, uSpeck, uVaria, uTopSoft;",
+          "vec3 preShadow;",
+          "float h3(vec3 p){ p = fract(p * 0.3183099 + 0.1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }",
+          "float vnoise(vec3 x){ vec3 i = floor(x); vec3 f = fract(x); f = f*f*(3.0-2.0*f);",
+          "  return mix(mix(mix(h3(i), h3(i+vec3(1,0,0)), f.x), mix(h3(i+vec3(0,1,0)), h3(i+vec3(1,1,0)), f.x), f.y),",
+          "             mix(mix(h3(i+vec3(0,0,1)), h3(i+vec3(1,0,1)), f.x), mix(h3(i+vec3(0,1,1)), h3(i+vec3(1,1,1)), f.x), f.y), f.z); }",
+          "float printHeight(vec3 mm){",
+          "  float fw = fwidth(mm.y);",
+          "  float layers = (0.5 + 0.5 * sin(mm.y * 6.2831 / 0.4)) * (1.0 - smoothstep(0.1, 0.35, fw));",
+          "  float grain = vnoise(mm * 2.2) * 0.7 + vnoise(mm * 5.5) * 0.3;",
+          "  return (uLayer * layers + uGrain * grain) / uScale;",
+          "}",
+          "vec3 pnArb(vec3 surf_pos, vec3 surf_norm, vec2 dHdxy, float fd){",
+          "  vec3 sx = dFdx(surf_pos); vec3 sy = dFdy(surf_pos);",
+          "  vec3 R1 = cross(sy, surf_norm); vec3 R2 = cross(surf_norm, sx);",
+          "  float det = dot(sx, R1) * fd;",
+          "  if (abs(det) < 0.05 * length(sx) * length(sy) * length(surf_norm)) return surf_norm;",
+          "  vec3 grad = sign(det) * (dHdxy.x * R1 + dHdxy.y * R2);",
+          "  return normalize(abs(det) * surf_norm - grad);",
+          "}"
+        ].join("\n"))
+        .replace("#include <color_fragment>", [
+          "#include <color_fragment>",
+          "{ vec3 mm = vWPos * uScale;",
+          "  diffuseColor.rgb *= 0.95 + 0.05 * vnoise(mm * 1.3);",
+          "  diffuseColor.rgb *= 1.0 - uVaria + uVaria * 2.0 * vnoise(vec3(mm.x * 0.08, mm.y * 1.2, mm.z * 0.08));",
+          "  float sp = step(0.986, h3(floor(mm * 3.2))) * (1.0 - smoothstep(0.25, 0.6, fwidth(mm.y)));",
+          "  diffuseColor.rgb *= 1.0 - 0.55 * uSpeck * sp; }"
+        ].join("\n"))
+        .replace("#include <normal_fragment_maps>", [
+          "#include <normal_fragment_maps>",
+          "{ float hh = printHeight(vWPos * uScale);",
+          "  normal = pnArb(-vViewPosition, normal, vec2(dFdx(hh), dFdy(hh)), gl_FrontFacing ? 1.0 : -1.0); }"
+        ].join("\n"))
+        .replace("#include <lights_fragment_begin>", lc);
+    };
+    return mat;
+  }
+
+  var shadeMat = makePrinted({ color: "#EEEAE2", rough: 0.92, transmit: 0.75, layer: 0.018, grain: 0.05, topSoft: 1 });
+  shadeMat.shadowSide = THREE.BackSide;
+  var innerMat = makePrinted({ color: "#BFA574", rough: 0.88, layer: 0.03, grain: 0.03, speck: 1, varia: 0.06, side: THREE.DoubleSide });
+  var bodyMat = new THREE.MeshStandardMaterial({ color: lin("#EEEAE2"), roughness: 0.82, metalness: 0 });
+  var bulbMat = new THREE.MeshStandardMaterial({ color: lin("#f6efe2"), roughness: 0.15, metalness: 0, emissive: lin("#ffd29a"), emissiveIntensity: 0 });
+
+  // ---------- Treccia del filo: juta (grossa, con peluria) e cotone (fine, compatta) ----------
+  // x del canvas = lungo il filo, y = attorno alla circonferenza (si richiude senza giunture)
+  function makeBraidMaps(o) {
+    var W = 512, H = 256, ROWS = o.rows, COLS = o.cols, cw = W / COLS, rh = H / ROWS;
+    var hc = document.createElement("canvas"); hc.width = W; hc.height = H;
+    var ac = document.createElement("canvas"); ac.width = W; ac.height = H;
+    var h = hc.getContext("2d"), a = ac.getContext("2d");
+    var rnd = mulberry32(o.seed);
+    h.fillStyle = "#000"; h.fillRect(0, 0, W, H);
+    a.fillStyle = o.gap; a.fillRect(0, 0, W, H);
+    function wrap(x, y, fn) { for (var dx = -1; dx <= 1; dx++) for (var dy = -1; dy <= 1; dy++) fn(x + dx * W, y + dy * H); }
+    for (var r = 0; r < ROWS; r++) for (var c = 0; c < COLS; c++) {
+      (function (r, c) {
+        var cx = (c + 0.5) * cw, cy = (r + 0.5) * rh;
+        var ang = (r % 2 ? -1 : 1) * 0.72;
+        var rx = cw * 0.68, ry = rh * 0.62;
+        var tone = 1 - o.toneVar + rnd() * o.toneVar;
+        var yarns = [];
+        for (var k = 0; k < o.yarns; k++) yarns.push(1 - o.yarnVar + rnd() * o.yarnVar);
+        wrap(cx, cy, function (x, y) {
+          h.save(); h.translate(x, y); h.rotate(ang); h.scale(1, ry / rx);
+          var g = h.createRadialGradient(0, 0, 0, 0, 0, rx);
+          g.addColorStop(0, "rgba(255,255,255,1)"); g.addColorStop(0.65, "rgba(190,190,190,0.9)"); g.addColorStop(1, "rgba(0,0,0,0)");
+          h.fillStyle = g; h.beginPath(); h.arc(0, 0, rx, 0, Math.PI * 2); h.fill(); h.restore();
+          [h, a].forEach(function (ctx, isA) {
+            ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.lineCap = "round";
+            for (var k = 0; k < o.yarns; k++) {
+              var off = (-(o.yarns - 1) / 2 + k) * (ry * 1.6 / o.yarns);
+              var len = rx * (0.92 - Math.abs(off) / ry * 0.35);
+              if (isA) {
+                var v = Math.round(255 * tone * yarns[k]);
+                ctx.strokeStyle = "rgb(" + v + "," + v + "," + v + ")";
+                ctx.lineWidth = ry * 1.6 / o.yarns;
+              } else {
+                ctx.strokeStyle = "rgba(0,0,0," + o.yarnLine + ")"; ctx.lineWidth = 1.1;
+                off += ry * 0.8 / o.yarns;
+              }
+              ctx.beginPath(); ctx.moveTo(-len, off); ctx.lineTo(len, off); ctx.stroke();
+            }
+            ctx.restore();
+          });
+        });
+      })(r, c);
+    }
+    for (var i = 0; i < o.fuzz; i++) {
+      var x0 = rnd() * W, y0 = rnd() * H, an = rnd() * Math.PI * 2, L = 4 + rnd() * 14;
+      var x1 = x0 + Math.cos(an) * L, y1 = y0 + Math.sin(an) * L;
+      var mx = (x0 + x1) / 2 + (rnd() - 0.5) * 6, my = (y0 + y1) / 2 + (rnd() - 0.5) * 6;
+      var light = rnd() > 0.35;
+      [[h, light ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.3)"], [a, light ? "rgba(255,255,255,0.28)" : "rgba(0,0,0,0.25)"]].forEach(function (p) {
+        p[0].strokeStyle = p[1]; p[0].lineWidth = 0.7;
+        p[0].beginPath(); p[0].moveTo(x0, y0); p[0].quadraticCurveTo(mx, my, x1, y1); p[0].stroke();
+      });
+    }
+    var bump = new THREE.CanvasTexture(hc), albedo = new THREE.CanvasTexture(ac);
+    albedo.encoding = THREE.sRGBEncoding;
+    [bump, albedo].forEach(function (t) {
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      t.repeat.set(1 / (W / H), 1);
+    });
+    return { bump: bump, albedo: albedo };
+  }
+  var BRAIDS = {
+    juta: Object.assign(makeBraidMaps({ rows: 12, cols: 16, yarns: 4, seed: 11, gap: "#9c9c9c", toneVar: 0.1, yarnVar: 0.12, yarnLine: 0.16, fuzz: 1800 }),
+      { rough: 1, bumpScale: 0.32, fuzz: 1 }),
+    tessile: Object.assign(makeBraidMaps({ rows: 16, cols: 24, yarns: 5, seed: 7, gap: "#dedede", toneVar: 0.025, yarnVar: 0.03, yarnLine: 0.05, fuzz: 0 }),
+      { rough: 0.7, bumpScale: 0.14, fuzz: 0 })
+  };
+  var cableMat = new THREE.MeshStandardMaterial({ color: lin("#B49C78"), roughness: 1, metalness: 0, map: BRAIDS.juta.albedo, bumpMap: BRAIDS.juta.bump, bumpScale: 0.5 });
+  voidFade(cableMat, "1.0 - smoothstep(-0.45, 0.0, vWPos.y)");
+  function applyBraid(type) {
+    var b = BRAIDS[type];
+    cableMat.map = b.albedo; cableMat.bumpMap = b.bump; cableMat.bumpScale = b.bumpScale; cableMat.roughness = b.rough;
+    target.fuzz = b.fuzz;
+  }
+
+  // ---------- Luci ----------
+  var hemi = new THREE.HemisphereLight(0xb8c2bc, 0x141210, 0.6);
+  scene.add(hemi);
+  var key = new THREE.DirectionalLight(0xe8ecff, 1.0);
+  key.position.set(3.5, 6.5, 4.5);
+  key.castShadow = true;
+  key.shadow.mapSize.set(2048, 2048);
+  key.shadow.camera.left = -3.5; key.shadow.camera.right = 3.5; key.shadow.camera.top = 4; key.shadow.camera.bottom = -3;
+  key.shadow.camera.far = 20;
+  key.shadow.bias = -0.0004;
+  key.shadow.radius = 3;
+  scene.add(key);
+
+  var WARM = lin("#ffc98a");
+  var bulbLight = new THREE.PointLight(WARM, 0, 9, 1.6);
+  bulbLight.position.set(0, 1.04, 0);
+  bulbLight.castShadow = true;
+  bulbLight.shadow.mapSize.set(1024, 1024); // atlante 4096×2048: più leggero per la scheda video
+  bulbLight.shadow.camera.near = 0.02;
+  bulbLight.shadow.camera.far = 6;
+  bulbLight.shadow.bias = -0.0015;
+  bulbLight.shadow.radius = 2.5;
+  scene.add(bulbLight);
+  // diffusione interna al paralume, senza ombre: due punti, così la parte alta sfuma invece di spegnersi
+  var scatterMid = new THREE.PointLight(WARM, 0, 1.4, 2);
+  scatterMid.position.set(0, 1.55, 0);
+  scene.add(scatterMid);
+  var scatterTop = new THREE.PointLight(WARM, 0, 1.0, 1.6);
+  scatterTop.position.set(0, 1.95, 0);
+  scene.add(scatterTop);
+  var spill = new THREE.PointLight(WARM, 0, 6, 2);
+  spill.position.set(0, 1.3, 0.9);
+  scene.add(spill);
+
+  function radialTex(stops) {
+    var c = document.createElement("canvas"); c.width = c.height = 256;
+    var g = c.getContext("2d"), grd = g.createRadialGradient(128, 128, 0, 128, 128, 128);
+    stops.forEach(function (s) { grd.addColorStop(s[0], s[1]); });
+    g.fillStyle = grd; g.fillRect(0, 0, 256, 256);
+    return new THREE.CanvasTexture(c);
+  }
+  var contact = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 1.9), new THREE.MeshBasicMaterial({
+    map: radialTex([[0, "rgba(0,0,0,0.65)"], [0.55, "rgba(0,0,0,0.35)"], [1, "rgba(0,0,0,0)"]]), transparent: true, depthWrite: false,
+    polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4
+  }));
+  contact.rotation.x = -Math.PI / 2; contact.position.y = 0.004; contact.renderOrder = 1;
+  scene.add(contact);
+
+  // ---------- Stato animato ----------
+  var target = {}, cur = {}, dirty = 2;
+  target.theme = 0; cur.theme = 0;
+  function syncTargets() {
+    var inn = findItem("inner", state.inner), cab = findItem("cable", state.cable);
+    target.inner = lin(inn.hex); target.speck = inn.speck; target.varia = inn.varia;
+    target.cable = lin(cab.hex);
+    target.light = state.on ? 1 : 0;
+  }
+  syncTargets();
+  applyBraid(findItem("cable", state.cable).type);
+  cur.inner = target.inner.clone(); cur.speck = target.speck; cur.varia = target.varia;
+  cur.cable = target.cable.clone(); cur.light = target.light; cur.fuzz = target.fuzz;
+
+  // ---------- Inquadrature ----------
+  var VIEWS = {
+    overview: { pos: new THREE.Vector3(-4.2, 3.45, 1.6), tgt: new THREE.Vector3(-0.25, 1.1, 0.0) },
+    inner:    { pos: new THREE.Vector3(0.9, 4.3, 1.5), tgt: new THREE.Vector3(0, 1.7, 0) },
+    cable:    { pos: new THREE.Vector3(-3.4, 3.1, 3.6), tgt: new THREE.Vector3(-0.4, 1.0, -0.7) }
+  };
+  camera.position.copy(VIEWS.overview.pos); controls.target.copy(VIEWS.overview.tgt);
+  var tween = null;
+  function goTo(view) {
+    var v = VIEWS[view];
+    if (reduceMotion) { camera.position.copy(v.pos); controls.target.copy(v.tgt); return; }
+    tween = { t: 0, dur: 1.2, fromP: camera.position.clone(), fromT: controls.target.clone(), toP: v.pos, toT: v.tgt };
+  }
+  controls.addEventListener("start", function () { tween = null; });
+  controls.addEventListener("change", function () { dirty = Math.max(dirty, 2); });
+  // ingresso: la camera arriva all'inquadratura iniziale con una rotazione morbida
+  var intro = null;
+  function startIntro() {
+    var v = VIEWS.overview;
+    var end = new THREE.Spherical().setFromVector3(v.pos.clone().sub(v.tgt));
+    if (reduceMotion || !INTRO_ON) { camera.position.copy(v.pos); controls.target.copy(v.tgt); dirty = 2; return; }
+    var start = end.clone(); start.theta -= 0.8; start.radius *= 1.2; start.phi -= 0.1;
+    intro = { t: 0, dur: 3.4, start: start, end: end, tgt: v.tgt.clone() };
+    controls.enabled = false;
+    controls.target.copy(v.tgt);
+    camera.position.setFromSpherical(start).add(v.tgt);
+  }
+  function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
+  Promise.all([writeDone, modelReady]).then(function () {
+    startIntro();
+    loaderEl.classList.add("done");
+    appEl.classList.add("ready");
+  });
+  function ease(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+
+  // ---------- UI ----------
+  var optEl = document.getElementById("options");
+  var summaryEl = document.getElementById("summary");
+  var lightBtn = document.getElementById("light-toggle");
+  var lightState = document.getElementById("light-state");
+
+  // ---------- Giorno / Sera ----------
+  // Senza scelta manuale segue il sistema (o il tema del visualizzatore); la scelta manuale viene ricordata.
+  var root = document.documentElement, darkMQ = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+  try { var saved = localStorage.getItem("canele-mode"); if (saved === "light" || saved === "dark") root.setAttribute("data-theme", saved); } catch (e) {}
+  function isDay() {
+    var t = root.getAttribute("data-theme");
+    if (t === "light") return true;
+    if (t === "dark") return false;
+    return !(darkMQ && darkMQ.matches);
+  }
+  function syncMode(instant) {
+    var day = isDay();
+    target.theme = day ? 1 : 0;
+    if (instant) cur.theme = target.theme;
+    document.getElementById("mode-day").setAttribute("aria-pressed", String(day));
+    document.getElementById("mode-evening").setAttribute("aria-pressed", String(!day));
+    dirty = 2;
+  }
+  document.querySelectorAll(".mode button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      root.setAttribute("data-theme", b.dataset.mode);
+      try { localStorage.setItem("canele-mode", b.dataset.mode); } catch (e) {}
+      syncMode(false);
+    });
+  });
+  if (darkMQ && darkMQ.addEventListener) darkMQ.addEventListener("change", function () { syncMode(false); });
+  if (window.MutationObserver) new MutationObserver(function () { syncMode(false); }).observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+  syncMode(true);
+
+  function renderOptions() {
+    var part = state.part, sel = findItem(part, state[part]);
+    optEl.setAttribute("aria-label", OPTIONS[part].label);
+    optEl.innerHTML = "";
+    OPTIONS[part].groups.forEach(function (g) {
+      var wrap = document.createElement("div"); wrap.className = "opt-group";
+      var h = document.createElement("h3"); h.textContent = g.title; wrap.appendChild(h);
+      var chips = document.createElement("div"); chips.className = "chips";
+      g.items.forEach(function (it) {
+        var b = document.createElement("button");
+        b.className = "cchip"; b.id = "opt-" + part + "-" + it.id;
+        b.title = it.name; b.setAttribute("aria-label", it.name);
+        b.setAttribute("aria-pressed", String(state[part] === it.id));
+        var dot = document.createElement("span"); dot.style.backgroundColor = it.hex; b.appendChild(dot);
+        b.addEventListener("click", function () {
+          state[part] = it.id; syncTargets();
+          if (part === "cable") applyBraid(it.type);
+          dirty = 2;
+          renderOptions(); renderSummary();
+        });
+        chips.appendChild(b);
+      });
+      wrap.appendChild(chips); optEl.appendChild(wrap);
+    });
+  }
+  function renderSummary() {
+    if (typeof resize === "function" && canvas.clientWidth <= 640) resize();
+    summaryEl.innerHTML = '<span class="k">Interno</span> <b>' + findItem("inner", state.inner).name + '</b> · <span class="k">Filo</span> <b>' +
+      findItem("cable", state.cable).name + '</b>';
+  }
+  document.querySelectorAll(".tab").forEach(function (t) {
+    t.addEventListener("click", function () {
+      state.part = t.dataset.part;
+      document.querySelectorAll(".tab").forEach(function (o) { o.setAttribute("aria-selected", String(o === t)); });
+      renderOptions(); goTo(state.part);
+    });
+  });
+  lightBtn.addEventListener("click", function () {
+    state.on = !state.on; syncTargets(); dirty = 2;
+    lightBtn.setAttribute("aria-pressed", String(state.on));
+    lightBtn.setAttribute("aria-label", state.on ? "Spegni la lampada" : "Accendi la lampada");
+    lightState.textContent = state.on ? "Accesa" : "Spenta";
+    renderSummary();
+  });
+  renderOptions(); renderSummary();
+
+  function resize() {
+    var w = canvas.clientWidth, h = canvas.clientHeight;
+    if (!w || !h) return;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.fov = w / h < 0.8 ? 50 : 36;
+    // la lampada si sposta per non finire sotto il pannello: a sinistra su schermi larghi, in alto su mobile
+    var panelEl = document.querySelector(".panel");
+    if (w > 640) camera.setViewOffset(w, h, 180, 0, w, h);
+    else camera.setViewOffset(w, h, 0, Math.round((panelEl ? panelEl.offsetHeight : 0) * 0.5), w, h);
+    // su mobile la lampada deve stare tutta nello spazio sopra il pannello
+    camera.zoom = w > 640 ? 1 : Math.max(0.5, Math.min(1, (h - (panelEl ? panelEl.offsetHeight : 0)) / h * 1.05));
+    camera.updateProjectionMatrix();
+    dirty = 2;
+  }
+  window.addEventListener("resize", resize);
+  resize();
+
+  // ---------- Caricamento del modello (file binario compresso accanto alla pagina) ----------
+  var MANIFEST = JSON.parse(document.getElementById("model-manifest").textContent);
+  var fuzzMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.38, depthWrite: false });
+  var lamp = new THREE.Group(); lamp.name = "canele"; scene.add(lamp);
+
+  function buildGeometry(p, buf) {
+    var q = new Uint16Array(buf, p.pos[0], p.pos[1] / 2), pos = new Float32Array(q.length);
+    for (var i = 0; i < q.length; i++) {
+      var k = i % 3;
+      pos[i] = (p.min[k] + q[i] / 65535 * (p.max[k] - p.min[k])) * S;
+    }
+    var g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    g.setAttribute("normal", new THREE.BufferAttribute(new Int8Array(buf, p.nrm[0], p.nrm[1]), 3, true));
+    if (p.uv) g.setAttribute("uv", new THREE.BufferAttribute(new Float32Array(buf, p.uv[0], p.uv[1] / 4), 2));
+    if (p.idx) g.setIndex(new THREE.BufferAttribute(p.idx32 ? new Uint32Array(buf, p.idx[0], p.idx[1] / 4) : new Uint16Array(buf, p.idx[0], p.idx[1] / 2), 1));
+    g.computeBoundingSphere();
+    return g;
+  }
+  function buildLamp(buf) {
+    function addPart(keyName, mat, cast) {
+      var m = new THREE.Mesh(buildGeometry(MANIFEST[keyName], buf), mat);
+      m.name = keyName; m.castShadow = cast; m.receiveShadow = true;
+      lamp.add(m);
+    }
+    addPart("paralume", shadeMat, true);
+    addPart("interno", innerMat, true);
+    addPart("corpo", bodyMat, true);
+    addPart("lampadina", bulbMat, false);
+    addPart("filo", cableMat, true);
+    lamp.children.forEach(function (m) { if (m.name === "lampadina") m.receiveShadow = false; });
+
+    // fibre che sporgono dalla juta, distribuite lungo le linee centrali del filo
+    var R = MANIFEST.filo.radius * S;
+    var fuzzPos = [], fr = mulberry32(3), up = new THREE.Vector3(0, 1, 0), alt = new THREE.Vector3(1, 0, 0);
+    MANIFEST.filo.centerlines.forEach(function (flat) {
+      var pts = [];
+      for (var i = 0; i < flat.length; i += 3) pts.push(new THREE.Vector3(flat[i] * S, flat[i + 1] * S, flat[i + 2] * S));
+      var curve = new THREE.CatmullRomCurve3(pts);
+      var n = Math.round(curve.getLength() / S * 6);
+      for (var f = 0; f < n; f++) {
+        var t = fr(), p = curve.getPointAt(t), T = curve.getTangentAt(t);
+        var N = new THREE.Vector3().crossVectors(T, Math.abs(T.y) > 0.95 ? alt : up).normalize();
+        var B = new THREE.Vector3().crossVectors(T, N).normalize();
+        var th = fr() * Math.PI * 2;
+        var dir = N.clone().multiplyScalar(Math.cos(th)).addScaledVector(B, Math.sin(th));
+        if (p.y < 0.02) continue; // oltre il bordo il filo sparisce nel vuoto
+        var base = p.clone().addScaledVector(dir, R * 0.92);
+        var len = 0.004 + Math.pow(fr(), 4) * 0.03;
+        var hair = dir.clone().multiplyScalar(0.55 + fr() * 0.45).addScaledVector(T, (fr() - 0.5) * 1.6).normalize();
+        var bend = new THREE.Vector3(fr() - 0.5, fr() - 0.5, fr() - 0.5).multiplyScalar(len * 0.8);
+        var mid = base.clone().addScaledVector(hair, len * 0.5).add(bend);
+        var end = mid.clone().addScaledVector(hair, len * 0.5).addScaledVector(bend, 0.6);
+        fuzzPos.push(base.x, base.y, base.z, mid.x, mid.y, mid.z, mid.x, mid.y, mid.z, end.x, end.y, end.z);
+      }
+    });
+    var fuzzGeo = new THREE.BufferGeometry();
+    fuzzGeo.setAttribute("position", new THREE.Float32BufferAttribute(fuzzPos, 3));
+    var fuzz = new THREE.LineSegments(fuzzGeo, fuzzMat);
+    fuzz.name = "filo_fibre";
+    lamp.add(fuzz);
+    renderer.shadowMap.needsUpdate = true;
+    dirty = 60;
+    // primo disegno (shader e ombre) ancora sotto il loader, così l'ingresso non scatta
+    renderer.render(scene, camera);
+    requestAnimationFrame(function () { resolveModel(); });
+  }
+
+  function loadModel() {
+    if (!window.DecompressionStream) { showFallback("Questo browser è troppo vecchio per caricare il modello 3D. Aggiornalo e riprova."); return; }
+    // model.txt = binario gzip in base64 (formato testo servito accanto alla pagina)
+    fetch("model.txt")
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
+      .then(function (t) {
+        var bin = atob(t.trim()), u8 = new Uint8Array(bin.length);
+        for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+        return new Response(new Blob([u8]).stream().pipeThrough(new DecompressionStream("gzip"))).arrayBuffer();
+      })
+      .then(buildLamp)
+      .catch(function () { showFallback("Il modello 3D non si è caricato. Ricarica la pagina."); });
+  }
+  loadModel();
+
+  // ---------- Loop ----------
+  var clock = new THREE.Clock();
+  var tmp = new THREE.Color(), WHITE = new THREE.Color(1, 1, 1);
+  function settled() {
+    return Math.abs(cur.theme - target.theme) < 0.002 && Math.abs(cur.light - target.light) < 0.002 && Math.abs(cur.fuzz - target.fuzz) < 0.002 &&
+      Math.abs(cur.speck - target.speck) < 0.002 && Math.abs(cur.varia - target.varia) < 0.002 &&
+      Math.abs(cur.inner.r - target.inner.r) + Math.abs(cur.inner.g - target.inner.g) + Math.abs(cur.inner.b - target.inner.b) < 0.002 &&
+      Math.abs(cur.cable.r - target.cable.r) + Math.abs(cur.cable.g - target.cable.g) + Math.abs(cur.cable.b - target.cable.b) < 0.002;
+  }
+  var failed = false;
+  // Se la scheda video interrompe il 3D, si prova a ripartire da soli; altrimenti si offre un pulsante.
+  canvas.addEventListener("webglcontextlost", function (e) {
+    e.preventDefault(); failed = true;
+    var t = setTimeout(function () {
+      showFallback("La scheda video ha interrotto il 3D.");
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "reload"; b.textContent = "Ricarica il configuratore";
+      b.addEventListener("click", function () { location.reload(); });
+      var fb = document.querySelector(".fallback"); if (fb) { fb.style.alignContent = "center"; fb.appendChild(b); }
+    }, 2500);
+    canvas.addEventListener("webglcontextrestored", function () { clearTimeout(t); location.reload(); }, { once: true });
+  });
+  // Quando la pagina viene chiusa o sostituita da una nuova versione, il contesto 3D viene liberato subito
+  // invece di restare a occupare la scheda video.
+  window.addEventListener("pagehide", function () {
+    try { renderer.dispose(); renderer.forceContextLoss(); } catch (e) {}
+  });
+  function frame() {
+    if (failed) return;
+    requestAnimationFrame(frame);
+    var dt = Math.min(clock.getDelta(), 0.05);
+    var changing = !settled(); // valutato prima delle transizioni: anche l'ultimo passo va disegnato
+    var k = reduceMotion ? 1 : 1 - Math.exp(-dt * 6);
+    var kl = reduceMotion ? 1 : 1 - Math.exp(-dt * 4.5);
+    cur.inner.lerp(target.inner, k);
+    cur.speck += (target.speck - cur.speck) * k;
+    cur.varia += (target.varia - cur.varia) * k;
+    cur.cable.lerp(target.cable, k);
+    cur.fuzz += (target.fuzz - cur.fuzz) * k;
+    cur.light += (target.light - cur.light) * kl;
+    cur.theme += (target.theme - cur.theme) * (reduceMotion ? 1 : 1 - Math.exp(-dt * 3.5));
+    var L = cur.light;
+
+    innerMat.color.copy(cur.inner);
+    innerMat.userData.u.uSpeck.value = cur.speck;
+    innerMat.userData.u.uVaria.value = cur.varia;
+    cableMat.color.copy(cur.cable);
+    fuzzMat.color.copy(cur.cable).lerp(WHITE, 0.12).multiplyScalar(0.62 - 0.3 * L);
+    fuzzMat.opacity = 0.38 * cur.fuzz;
+    fuzzMat.visible = cur.fuzz > 0.01;
+
+    tmp.copy(WARM).lerp(cur.inner, 0.2);
+    bulbLight.color.copy(tmp); spill.color.copy(tmp); scatterMid.color.copy(tmp); scatterTop.color.copy(tmp);
+    bulbMat.emissiveIntensity = 3 * L;
+    bulbLight.intensity = 3.2 * L * (1 - 0.3 * cur.theme); // di giorno la raggiera non brucia
+    scatterMid.intensity = 4.0 * L;
+    scatterTop.intensity = 2.0 * L;
+    spill.intensity = 0.35 * L;
+    var D = cur.theme; // 0 = Sera, 1 = Giorno
+    hemi.color.copy(HEMI_SKY_N).lerp(HEMI_SKY_D, D);
+    hemi.groundColor.copy(HEMI_GND_N).lerp(HEMI_GND_D, D);
+    key.color.copy(KEY_N).lerp(KEY_D, D);
+    hemi.intensity = (0.6 - 0.48 * L) * (1 - D) + (0.7 - 0.12 * L) * D;
+    key.intensity = (1.0 - 0.85 * L) * (1 - D) + (1.05 - 0.2 * L) * D;
+    floorMat.color.copy(FLOOR_NIGHT).lerp(FLOOR_DAY, D);
+    contact.material.opacity = (1 - 0.6 * L) * (1 - 0.45 * D);
+    var envI = (1 - 0.75 * L) * (1 - D) + (0.85 - 0.15 * L) * D;
+    shadeMat.envMapIntensity = innerMat.envMapIntensity = bodyMat.envMapIntensity = cableMat.envMapIntensity = envI;
+    scene.background.copy(BG_OFF).lerp(BG_ON, L);
+    tmpBg.copy(BG_DAY_OFF).lerp(BG_DAY_ON, L);
+    scene.background.lerp(tmpBg, D);
+
+    if (intro) {
+      intro.t = Math.min(1, intro.t + dt / intro.dur);
+      var ei = easeOut(intro.t), sp = new THREE.Spherical(
+        intro.start.radius + (intro.end.radius - intro.start.radius) * ei,
+        intro.start.phi + (intro.end.phi - intro.start.phi) * ei,
+        intro.start.theta + (intro.end.theta - intro.start.theta) * ei);
+      camera.position.setFromSpherical(sp).add(intro.tgt);
+      camera.lookAt(intro.tgt);
+      if (intro.t >= 1) { intro = null; controls.enabled = true; }
+    }
+    if (tween) {
+      tween.t += dt / tween.dur;
+      var e = ease(Math.min(tween.t, 1));
+      camera.position.lerpVectors(tween.fromP, tween.toP, e);
+      controls.target.lerpVectors(tween.fromT, tween.toT, e);
+      if (tween.t >= 1) tween = null;
+    }
+    var moved = controls.update();
+    // si disegna solo quando qualcosa cambia: camera, transizioni, caricamento
+    if (moved || tween || intro || changing || dirty > 0) {
+      try { renderer.render(scene, camera); }
+      catch (err) { failed = true; showFallback("Il 3D si è interrotto: " + (err && err.message ? err.message : err) + ". Ricarica la pagina."); }
+    }
+    if (dirty > 0) dirty--;
+  }
+  frame();
+})();
+</script>
+</body>
+</html>
