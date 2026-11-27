@@ -5,8 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Canelè · Configuratore</title>
 <meta name="description" content="Configura Canelè, la lampada da tavolo stampata in 3D di Andrea Product Design: scegli l’interno e il filo, accendila e guardala da ogni lato.">
-<meta name="theme-color" content="#D9D1C5" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#101814" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" id="theme-color" content="#D9D1C5">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -22,6 +21,8 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="La lampada Canelè accesa, con interno in legno e filo in juta">
 <meta name="twitter:card" content="summary_large_image">
+<!-- Statistiche visite: Umami, senza cookie -->
+<script defer src="https://cloud.umami.is/script.js" data-website-id="9c887c62-5129-4afc-baf6-8d99dfebefdb"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Manrope:wght@400;500;600&display=swap">
@@ -47,19 +48,20 @@
   --track: 0.07em;
   /* Dimensioni · Base */
   --chip-size: 30px; --chip-padding: 3px; --chips-gap: 8px;
-  --tab-padding-x: 12px; --tab-padding-y: 10px; --tab-gap: 2px; --tabs-gap: 6px;
+  --tab-padding-x: 12px; --tab-height: 44px; --tabs-gap: 6px;
   --group-gap: 8px; --groups-gap: 14px; --content-gap: 16px; --divider-padding-top: 14px;
   --switch-width: 58px; --switch-height: 32px; --switch-knob: 24px; --switch-padding: 3px;
   --mode-padding: 3px; --mode-gap: 2px; --mode-icon: 15px; --mode-button-gap: 6px;
   --cta-height: 42px; --cta-padding: 12px; --cta-gap: 8px; --cta-inner-gap: 4px;
+  --sheet-handle-height: 40px; --sheet-arrow-width: 28px; --sheet-padding-top: 10px;
   /* Dimensioni · Desktop */
   --page-gutter: 24px; --header-padding-y: 20px;
-  --panel-padding: 24px; --panel-gap: 24px; --panel-width: 330px; --panel-offset-bottom: 24px;
+  --panel-padding: 24px; --panel-gap: 24px; --panel-width: 350px; --panel-offset-bottom: 24px;
   --mode-button-padding-x: 12px; --mode-button-padding-y: 6px;
   --radius-panel: 40px; --radius-tab: 16px;
   --logo-size: 32px; --brand-gap: 16px;
   /* Stili di testo · Desktop */
-  --brand-size: 32px; --selector-size: 15px;
+  --brand-size: 32px; --selector-size: 16px; --cta-size: 17px; --price-size: 13px;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -76,10 +78,12 @@
   color-scheme: dark;
 }
 *, *::before, *::after { box-sizing: border-box; }
+html { background: var(--bg); }
 html, body { height: 100%; }
 body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font-body); overflow: hidden; }
 .app { position: relative; height: 100%; }
-#scene { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
+/* la scena prosegue sotto barra di stato e barre del browser (100lvh = altezza con le barre ritratte) */
+#scene { position: fixed; top: 0; left: 0; width: 100%; height: 100%; height: 100lvh; display: block; cursor: grab; touch-action: none; }
 #scene:active { cursor: grabbing; }
 
 /* ---------- Header ---------- */
@@ -109,7 +113,7 @@ body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--fo
 .mode button svg { width: var(--mode-icon); height: var(--mode-icon); flex: none; }
 .mode button[aria-pressed="true"] { background: var(--accent-soft); color: var(--fg); box-shadow: inset 0 0 0 1px var(--accent); }
 .mode button:hover { color: var(--fg); }
-body, .panel, .tab, .mode, .loader { transition-property: background-color, color, border-color; transition-duration: .8s; }
+.panel, .tab, .mode, .loader { transition-property: background-color, color, border-color; transition-duration: .8s; }
 
 /* ---------- Card controlli ---------- */
 .panel {
@@ -124,19 +128,23 @@ body, .panel, .tab, .mode, .loader { transition-property: background-color, colo
   border: 1px solid var(--line);
   border-radius: var(--radius-panel);
   padding: var(--panel-padding);
-  display: flex; flex-direction: column; gap: var(--panel-gap);
+  display: flex; flex-direction: column; gap: var(--content-gap);
 }
 .panel::-webkit-scrollbar { display: none; }
 .content { display: flex; flex-direction: column; gap: var(--content-gap); }
+/* Sheet (solo mobile): su desktop maniglia nascosta e parti richiudibili sempre aperte */
+.sheet-handle { display: none; }
+.sheet-body { display: contents; }
+.sheet-inner { display: flex; flex-direction: column; gap: var(--panel-gap); }
+.cta-idea-wrap { display: contents; }
 .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: var(--tabs-gap); }
 .tab {
   appearance: none; border: 1px solid var(--line); background: transparent; color: var(--fg);
-  border-radius: var(--radius-tab); padding: var(--tab-padding-y) var(--tab-padding-x); text-align: left; cursor: pointer;
+  border-radius: var(--radius-tab); height: var(--tab-height); padding: 0 var(--tab-padding-x); text-align: left; cursor: pointer;
   font: 500 18px/1.2 var(--font-display); letter-spacing: -0.01em;
-  display: flex; flex-direction: column; gap: var(--tab-gap);
+  display: flex; align-items: center; justify-content: flex-start;
   transition: color .2s, border-color .2s, background .2s;
 }
-.tab small { font: 400 12px/1.3 var(--font-body); letter-spacing: var(--track); color: var(--muted); }
 .tab[aria-selected="true"] { border-color: var(--accent); background: var(--accent-soft); }
 .tab:hover { border-color: var(--accent); }
 
@@ -180,13 +188,13 @@ body, .panel, .tab, .mode, .loader { transition-property: background-color, colo
   appearance: none; display: inline-flex; align-items: center; justify-content: center; gap: var(--cta-inner-gap);
   height: var(--cta-height); padding: 0 var(--cta-padding); border-radius: 999px; white-space: nowrap;
   text-decoration: none; cursor: pointer; transition: background .25s, color .25s, border-color .25s, opacity .2s;
-  font: 400 var(--selector-size)/1 var(--font-display);
+  font: 400 var(--cta-size)/1 var(--font-display);
 }
 .cta-secondary { flex: 1 1 auto; min-width: 0; border: 1px solid var(--line); color: var(--fg); background: transparent; }
 .cta-secondary:hover { border-color: var(--accent); }
 .cta-primary { flex: 0 0 auto; border: 1px solid var(--fg); background: var(--fg); color: var(--fg-inverse); }
 .cta-primary:hover { opacity: .9; }
-.cta-price { font: 600 12px/1 var(--font-body); letter-spacing: var(--track); }
+.cta-price { font: 600 var(--price-size)/1 var(--font-body); letter-spacing: var(--track); }
 
 /* Loader: la "a" del logo si scrive, poi compaiono modello e interfaccia */
 .loader {
@@ -222,15 +230,30 @@ button:focus-visible, .cta:focus-visible { outline: 2px solid var(--accent); out
     --mode-button-padding-x: 10px; --mode-button-padding-y: 6px;
     --radius-panel: 24px; --radius-tab: 8px;
     --logo-size: 24px; --brand-gap: 8px;
-    --brand-size: 22px; --selector-size: 14px;
+    --brand-size: 22px; --selector-size: 16px;
   }
   .panel {
     left: max(var(--page-gutter), env(safe-area-inset-left, 0px));
     right: max(var(--page-gutter), env(safe-area-inset-right, 0px));
     width: auto; max-width: none; max-height: calc(100% - 90px);
   }
-  .ctas { flex-direction: column; }
+  .panel { gap: 0; padding-top: var(--sheet-padding-top); touch-action: none; overflow: hidden; }
+  .ctas { flex-direction: column; gap: 0; margin-top: var(--content-gap); }
   .cta-secondary, .cta-primary { flex: none; width: 100%; }
+  /* Sheet: chiusa mostra maniglia + Configura, Luce e Ordina; aperta aggiunge tab, finiture e Scopri l'idea.
+     Le altezze delle parti richiudibili sono guidate dallo script (--p: 0 chiusa, 1 aperta). */
+  .sheet-handle {
+    appearance: none; border: 0; background: transparent; color: var(--muted); cursor: grab;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0;
+    width: 100%; min-height: var(--sheet-handle-height); padding: 6px 0 10px; margin: 0;
+  }
+  .sheet-arrow { width: var(--sheet-arrow-width); height: 8px; flex: none; }
+  .sheet-label { display: block; overflow: hidden; }
+  .sheet-label span { display: block; padding-top: 6px; font: 600 12px/1.3 var(--font-body); letter-spacing: var(--track); text-transform: uppercase; color: var(--fg); }
+  .sheet-body { display: block; overflow: hidden; height: 0; }
+  .sheet-inner { gap: var(--panel-gap); padding: 4px 0 var(--content-gap); }
+  .cta-idea-wrap { display: block; overflow: hidden; height: 0; }
+  .cta-idea-wrap .cta { margin-bottom: var(--cta-gap); }
   .summary, .hint { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -256,24 +279,29 @@ button:focus-visible, .cta:focus-visible { outline: 2px solid var(--accent); out
     </div>
   </header>
 
-  <aside class="panel" aria-label="Configura la lampada">
-    <div class="tabs" role="tablist">
-      <button class="tab" role="tab" id="tab-inner" aria-selected="true" data-part="inner"><small>01</small>Interno</button>
-      <button class="tab" role="tab" id="tab-cable" aria-selected="false" data-part="cable"><small>02</small>Filo</button>
+  <aside class="panel" id="panel" aria-label="Configura la lampada">
+    <button type="button" class="sheet-handle" id="sheet-handle" aria-expanded="false" aria-controls="sheet-body">
+      <svg class="sheet-arrow" viewBox="0 0 28 8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 6.5 14 1.5 26 6.5"/></svg>
+      <span class="sheet-label" id="sheet-label"><span>Configura</span></span>
+    </button>
+    <div class="sheet-body" id="sheet-body">
+      <div class="sheet-inner">
+        <div class="tabs" role="tablist">
+          <button class="tab" role="tab" id="tab-inner" aria-selected="true" data-part="inner">Interno</button>
+          <button class="tab" role="tab" id="tab-cable" aria-selected="false" data-part="cable">Filo</button>
+        </div>
+        <div class="options" id="options" role="group" aria-label="Struttura interna"></div>
+      </div>
     </div>
-    <div class="content">
-      <div class="options" id="options" role="group" aria-label="Struttura interna"></div>
       <div class="light-row">
         <div class="lbl"><strong>Luce</strong><small id="light-state">Spenta</small></div>
         <button class="switch" id="light-toggle" aria-pressed="false" aria-label="Accendi la lampada"></button>
       </div>
       <div class="summary" id="summary"></div>
       <div class="ctas">
-        <!-- Link da inserire: portfolio e profilo Instagram -->
-        <a class="cta cta-secondary" id="cta-idea" href="https://www.andreaproductdesign.com/projects-2/canele" target="_blank" rel="noopener">Scopri l’idea</a>
-        <a class="cta cta-primary" id="cta-order" href="https://ig.me/m/andrea.productdesign" target="_blank" rel="noopener"><span class="cta-price">80€</span><span>Ordina la tua su IG</span></a>
+        <div class="cta-idea-wrap" id="cta-idea-wrap"><a class="cta cta-secondary" id="cta-idea" data-umami-event="Scopri l'idea" href="https://www.andreaproductdesign.com/projects-2/canele" target="_blank" rel="noopener">Scopri l’idea</a></div>
+        <a class="cta cta-primary" id="cta-order" data-umami-event="Ordina su IG" href="https://ig.me/m/andrea.productdesign" target="_blank" rel="noopener"><span class="cta-price">80€</span><span>Ordina la tua su IG</span></a>
       </div>
-    </div>
   </aside>
 
   <div class="loader" id="loader" role="status" aria-label="Caricamento del configuratore">
@@ -770,7 +798,6 @@ button:focus-visible, .cta:focus-visible { outline: 2px solid var(--accent); out
     });
   }
   function renderSummary() {
-    if (typeof resize === "function" && canvas.clientWidth <= 640) resize();
     summaryEl.innerHTML = '<span class="k">Interno</span> <b>' + findItem("inner", state.inner).name + '</b> · <span class="k">Filo</span> <b>' +
       findItem("cable", state.cable).name + '</b>';
   }
@@ -790,20 +817,116 @@ button:focus-visible, .cta:focus-visible { outline: 2px solid var(--accent); out
   });
   renderOptions(); renderSummary();
 
+  // ---------- Sheet mobile: chiusa (0) / aperta (1), trascinabile e apribile con un tocco ----------
+  var mobileMQ = window.matchMedia("(max-width: 640px)");
+  var panelEl = document.getElementById("panel");
+  var handleEl = document.getElementById("sheet-handle");
+  var sheetBody = document.getElementById("sheet-body");
+  var sheetInner = sheetBody.firstElementChild;
+  var ideaWrap = document.getElementById("cta-idea-wrap");
+  var ideaCta = document.getElementById("cta-idea");
+  var labelEl = document.getElementById("sheet-label");
+  var arrowEl = handleEl.querySelector(".sheet-arrow");
+  var sheetP = 0, sheetAnim = null;
+  var headerEl = document.querySelector(".top");
+  var LAMP_FILL = 1.25; // quanto la lampada riempie lo spazio libero sopra la sheet (tarato sul modello)
+  function ideaHeight() { return ideaCta.offsetHeight + (parseFloat(getComputedStyle(ideaCta).marginBottom) || 0); }
+  function setSheet(p) {
+    var raw = p; // può uscire leggermente da 0..1 durante il rimbalzo
+    sheetP = Math.max(0, Math.min(1, p));
+    var parts = [sheetBody, ideaWrap, labelEl];
+    if (!mobileMQ.matches) {
+      parts.forEach(function (el) { el.style.height = ""; el.style.opacity = ""; el.inert = false; });
+      sheetInner.style.opacity = ""; arrowEl.style.transform = ""; panelEl.style.translate = "";
+      return;
+    }
+    var e = sheetP, full = raw === 1, none = e <= 0, over = Math.max(1, raw);
+    sheetBody.style.height = full ? "auto" : (sheetInner.offsetHeight * e * over) + "px";
+    ideaWrap.style.height = full ? "auto" : (ideaHeight() * e) + "px";
+    // in chiusura il rimbalzo fa scendere di poco la card sotto la posizione di riposo
+    panelEl.style.translate = raw < 0 ? "0 " + (-raw * 240).toFixed(1) + "px" : ""; // proprietà separata da transform: non subisce la transizione d'ingresso
+    labelEl.style.height = none ? "auto" : (labelEl.firstElementChild.offsetHeight * (1 - e)) + "px";
+    sheetInner.style.opacity = ideaWrap.style.opacity = String(Math.max(0, (e - 0.3) / 0.7));
+    labelEl.style.opacity = String(Math.max(0, 1 - e * 2));
+    arrowEl.style.transform = "scaleY(" + (1 - 2 * e).toFixed(3) + ")"; // la freccia si appiattisce e si gira
+    sheetBody.inert = ideaWrap.inert = e < 0.5;
+    handleEl.setAttribute("aria-expanded", String(e >= 0.5));
+    handleEl.setAttribute("aria-label", e >= 0.5 ? "Chiudi la configurazione" : "Apri la configurazione");
+    if (typeof frameCamera === "function") frameCamera();
+  }
+  function animateSheet(to) {
+    if (sheetAnim) cancelAnimationFrame(sheetAnim.raf);
+    var from = sheetP;
+    if (reduceMotion || from === to) { setSheet(to); return; }
+    var dur = Math.max(300, 560 * Math.abs(to - from)), t0 = performance.now();
+    sheetAnim = { raf: 0 };
+    // easeOutBack: supera la posizione finale di circa il 9% e torna indietro
+    var c1 = 1.6, c3 = c1 + 1;
+    (function step(now) {
+      var t = Math.min(1, (now - t0) / dur), u = t - 1, e = 1 + c3 * u * u * u + c1 * u * u;
+      setSheet(from + (to - from) * e);
+      if (t < 1) sheetAnim.raf = requestAnimationFrame(step); else sheetAnim = null;
+    })(t0);
+  }
+  var drag = null, suppressClick = false;
+  panelEl.addEventListener("pointerdown", function (ev) {
+    if (!mobileMQ.matches || (ev.pointerType === "mouse" && ev.button !== 0)) return;
+    // i controlli restano cliccabili: si trascina dalla maniglia o dalle zone vuote della card
+    if (ev.target.closest("a, .tab, .cchip, .switch")) return;
+    if (sheetAnim) { cancelAnimationFrame(sheetAnim.raf); sheetAnim = null; }
+    var range = Math.max(120, sheetInner.offsetHeight + ideaHeight() - labelEl.firstElementChild.offsetHeight);
+    drag = { id: ev.pointerId, y0: ev.clientY, p0: sheetP, range: range, moved: false, lastY: ev.clientY, lastT: performance.now(), v: 0 };
+  });
+  panelEl.addEventListener("pointermove", function (ev) {
+    if (!drag || ev.pointerId !== drag.id) return;
+    var dy = ev.clientY - drag.y0, now = performance.now();
+    if (!drag.moved && Math.abs(dy) < 6) return;
+    if (!drag.moved) { drag.moved = true; try { panelEl.setPointerCapture(ev.pointerId); } catch (e) {} } // cattura solo quando è davvero un trascinamento: i tocchi restano click
+    drag.v = (ev.clientY - drag.lastY) / Math.max(1, now - drag.lastT); // px/ms, positivo verso il basso
+    drag.lastY = ev.clientY; drag.lastT = now;
+    setSheet(Math.max(0, Math.min(1, drag.p0 - dy / drag.range)));
+  });
+  function endDrag(ev) {
+    if (!drag || ev.pointerId !== drag.id) return;
+    var d = drag; drag = null;
+    if (!d.moved) return; // tocco semplice: ci pensa il click sulla maniglia
+    suppressClick = true; setTimeout(function () { suppressClick = false; }, 0);
+    var to = d.v < -0.35 ? 1 : d.v > 0.35 ? 0 : (sheetP > 0.5 ? 1 : 0);
+    animateSheet(to);
+  }
+  panelEl.addEventListener("pointerup", endDrag);
+  panelEl.addEventListener("pointercancel", endDrag);
+  handleEl.addEventListener("click", function () {
+    if (suppressClick) return;
+    animateSheet(sheetP >= 0.5 ? 0 : 1);
+  });
+  // a sheet aperta le altezze restano "auto": cambiando tab non ci sono salti
+  setSheet(0);
+
   function resize() {
     var w = canvas.clientWidth, h = canvas.clientHeight;
     if (!w || !h) return;
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.fov = w / h < 0.8 ? 50 : 36;
-    // la lampada si sposta per non finire sotto il pannello: a sinistra su schermi larghi, in alto su mobile
-    var panelEl = document.querySelector(".panel");
-    if (w > 640) camera.setViewOffset(w, h, 180, 0, w, h);
-    else camera.setViewOffset(w, h, 0, Math.round((panelEl ? panelEl.offsetHeight : 0) * 0.5), w, h);
-    // su mobile la lampada deve stare tutta nello spazio sopra il pannello
-    camera.zoom = w > 640 ? 1 : Math.max(0.5, Math.min(1, (h - (panelEl ? panelEl.offsetHeight : 0)) / h * 1.05));
+    setSheet(sheetP);
+    frameCamera();
+  }
+  // La lampada si sposta per non finire sotto la card: a sinistra su schermi larghi;
+  // su mobile resta centrata nello spazio libero tra header e sheet, e si ingrandisce quando la sheet è chiusa.
+  function frameCamera() {
+    var w = canvas.clientWidth, h = canvas.clientHeight;
+    if (!w || !h) return;
+    if (w > 640) { camera.setViewOffset(w, h, 180, 0, w, h); camera.zoom = 1; }
+    else {
+      var top = headerEl ? headerEl.offsetHeight : 0;
+      var bottom = panelEl.offsetTop; // bordo superiore della sheet
+      var avail = Math.max(120, bottom - top);
+      camera.setViewOffset(w, h, 0, Math.round(h / 2 - (top + avail / 2)), w, h);
+      camera.zoom = Math.max(0.45, Math.min(1.15, avail / h * LAMP_FILL));
+    }
     camera.updateProjectionMatrix();
-    dirty = 2;
+    dirty = Math.max(dirty, 2);
   }
   window.addEventListener("resize", resize);
   resize();
@@ -918,6 +1041,7 @@ button:focus-visible, .cta:focus-visible { outline: 2px solid var(--accent); out
   window.addEventListener("pagehide", function () {
     try { renderer.dispose(); renderer.forceContextLoss(); } catch (e) {}
   });
+  var lastBgHex = "", themeMeta = document.getElementById("theme-color");
   function frame() {
     if (failed) return;
     requestAnimationFrame(frame);
@@ -962,6 +1086,15 @@ button:focus-visible, .cta:focus-visible { outline: 2px solid var(--accent); out
     scene.background.copy(BG_OFF).lerp(BG_ON, L);
     tmpBg.copy(BG_DAY_OFF).lerp(BG_DAY_ON, L);
     scene.background.lerp(tmpBg, D);
+    // le aree fuori dalla pagina (barra di stato, barre di Safari) prendono lo stesso colore dello sfondo 3D
+    if (appEl.classList.contains("ready")) {
+      var bgHex = "#" + scene.background.getHexString();
+      if (bgHex !== lastBgHex) {
+        lastBgHex = bgHex;
+        document.documentElement.style.backgroundColor = document.body.style.backgroundColor = bgHex;
+        if (themeMeta) themeMeta.setAttribute("content", bgHex);
+      }
+    }
 
     if (intro) {
       intro.t = Math.min(1, intro.t + dt / intro.dur);
